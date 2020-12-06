@@ -22,7 +22,7 @@ void loop()
     if (test == 0)
     {
       Serial.print("Sensor bei Adresse gefunden: HEX_");
-      Serial.println(address, HEX);
+      Serial.println(addr, HEX);
     }
   }
   delay(1000);
