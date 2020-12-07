@@ -1,3 +1,5 @@
+#include <Adafruit_BME280.h>
+
 
 #include <Wire.h>
 
@@ -69,20 +71,21 @@ void bme_calibrate(byte addr) {
 }
 
 void bme_readAll(byte addr, long *temp, long *press, long *hudy) {
-  int tmp_temp = 0;
-  int tmp_press = 0;
-  int tmp_hudy = 0;
+ 
+  long tmp_temp = 0;
+  long tmp_press = 0;
+  long tmp_hudy = 0;
   long tmp_calc1 = 0;
   long tmp_calc2 = 0;
   long tmp_calc3 = 0;
 
   Wire.beginTransmission(addr);
-  Wire.write(0xF7); // request
+  Wire.write(0xFA); // request
   Wire.endTransmission();
 
-  Wire.requestFrom(addr, 8);
+  Wire.requestFrom(addr, 3);
   byte data[8];
-  for( int i = 0; i <= 7; i++) {
+  for( int i = 0; i <= 2; i++) {
     data[i] = Wire.read();
     Serial.print(" 0x");
     Serial.print(data[i], HEX);
@@ -91,34 +94,61 @@ void bme_readAll(byte addr, long *temp, long *press, long *hudy) {
 
   // die 20 Temperaturbits zusammenbasteln
   // AAAAAAAABBBBBBBBCCCC
-  tmp_temp = data[4] << 12; // AAAAAAAA000000000000
-  tmp_temp += data[3] << 4; // 00000000BBBBBBBB0000
-  tmp_temp += data[5] >> 4; // 0000000000000000CCCC
+  tmp_temp = data[2] << 12; // AAAAAAAA000000000000
+  tmp_temp += data[1] << 4; // 00000000BBBBBBBB0000
+  tmp_temp += data[0] >> 4; // 0000000000000000CCCC
+
+  Wire.beginTransmission(addr);
+  Wire.write(0xFC); // request
+  Wire.endTransmission();
+
+  Wire.requestFrom(addr, 3);
+  //byte data[8];
+  for( int i = 0; i <= 2; i++) {
+    data[i] = Wire.read();
+    Serial.print(" 0x");
+    Serial.print(data[i], HEX);
+  }
+  Serial.println();
 
   // die 20 Luftdruck-Bits zusammenbasteln
-  tmp_press = data[0] << 12; // AAAAAAAA000000000000
+  tmp_press = data[2] << 12; // AAAAAAAA000000000000
   tmp_press += data[1] << 4; // 00000000BBBBBBBB0000
-  tmp_press += data[2] >> 4; // 0000000000000000CCCC
+  tmp_press += data[0] >> 4; // 0000000000000000CCCC
+
+  Wire.beginTransmission(addr);
+  Wire.write(0xF7); // request
+  Wire.endTransmission();
+
+  Wire.requestFrom(addr, 2);
+//  byte data[8];
+  for( int i = 0; i <= 1; i++) {
+    data[i] = Wire.read();
+    Serial.print(" 0x");
+    Serial.print(data[i], HEX);
+  }
+  Serial.println();
 
   // die 16 Luftfeuchte-Bits zusammenbasteln
-  tmp_hudy = data[6] << 8;
-  tmp_hudy += data[7];
+  tmp_hudy = data[1] << 8;
+  tmp_hudy += data[0];
 
   // Temperatur-Messwert nachkalibrieren
   tmp_calc1 = ((((tmp_temp >> 3) - (cal_temp1 <<1))) * (cal_temp2)) >> 11;
 	tmp_calc2 = (((((tmp_temp >> 4) - (cal_temp1)) * ((tmp_temp>>4) - (cal_temp1))) >> 12) * (cal_temp3)) >> 14;
 	tmp_calc3 = tmp_calc1 + tmp_calc2;
 	*temp = (tmp_calc3 * 5 + 128) >> 8;
+  *temp += 0;
   Serial.print("SENSOR 0x");
   Serial.println(addr, HEX);
   Serial.print(" Temp=");
   Serial.print(tmp_temp / 100.0);
   Serial.print(" TempCal=");
-  Serial.println(*temp / 100.0);
+  Serial.print(*temp / 100.0);
   Serial.print(" Hudy=");
-  Serial.print(tmp_hudy / 1024.0);
+  Serial.print(tmp_hudy/1024.0);
   Serial.print(" Press=");
-  Serial.println(tmp_press / 256.0);
+  Serial.println(tmp_press);
   return;
 }
 
@@ -155,7 +185,7 @@ void setup() {
 
 
 void loop() {
-  unsigned long temp, hudy, press;
+  long temp, hudy, press;
   byte addr = 0x76;
   bme_getStatus(addr);
   bme_readAll(addr, &temp, &hudy, &press);
@@ -163,5 +193,5 @@ void loop() {
   bme_getStatus(addr);
   bme_readAll(addr, &temp, &hudy, &press);
 
-  delay(5000);
+  delay(1000);
 }
