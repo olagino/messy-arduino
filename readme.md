@@ -5,3 +5,6 @@
  0x76 = BME 280 "LOW"
  
  0x77 = BME 280 "HIGH"
+
+ 
+ Statusänderung blafoo
