@@ -57,7 +57,8 @@ int i = 0;
 void setup() {
     Serial.begin(115200);
     while(!Serial);
-    Serial.println(F("BME280 test"));
+    Serial.println("Sensorbox-Test");
+    Serial.println("==============");
 
     unsigned status;
     bme_innen.begin(0x77);
@@ -71,23 +72,23 @@ void setup() {
 
 void loop() { 
     delay(DELAY);
-    digitalWrite(3, HIGH);
-    
+    digitalWrite(3, HIGH); // DEBUG
     temp_hdc[i] = (hdc1080.readTemperature());
     hum_hdc[i]  = (hdc1080.readHumidity());
-    digitalWrite(3, LOW);
+    digitalWrite(3, LOW); // DEBUG
     temp_i[i] = (bme_innen.readTemperature());
     temp_a[i] = (bme_aussen.readTemperature());
-    digitalWrite(3, HIGH);
+    digitalWrite(3, HIGH); // DEBUG
     hum_i[i] = (bme_innen.readHumidity());    
     hum_a[i] = (bme_aussen.readHumidity());
-    digitalWrite(3, LOW);
+    digitalWrite(3, LOW); // DEBUG
     pres_i[i] = (bme_innen.readPressure() / 100.0F);
     pres_a[i] = (bme_aussen.readPressure() / 100.0F);
-    digitalWrite(3, HIGH);
-    delay(10);
-    digitalWrite(3, LOW);
+    digitalWrite(3, HIGH); // DEBUG
+    delay(10); // DEBUG
+    digitalWrite(3, LOW); // DEBUG
     i++;
+    // check, if the measurement-queue is full. If this is the case start working with them.
     if(i==MEASURECOUNT){
       m_temp_i = 0;
       m_temp_a = 0;
@@ -97,7 +98,10 @@ void loop() {
       m_temp_hdc = 0;
       m_hum_hdc = 0;
       
+      // calculate mean of measurement-queue/series
       for(int j = 0; j <= MEASURECOUNT-1;j++){
+        // TODO for later applications:
+        // Handle obvious mis-measurements like 0xFF- or sticky-Data-Registers
         m_temp_i += temp_i[j];
         m_temp_a += temp_a[j];
         m_hum_a += hum_a[j];
@@ -119,7 +123,7 @@ void loop() {
       m_temp_hdc = m_temp_hdc/MEASURECOUNT;
       m_hum_hdc = m_hum_hdc/MEASURECOUNT;
 
-      // STD-DEV
+      // calculate STD-DEViation
       for(int j = 0; j <= MEASURECOUNT-1;j++){
         std_temp_i += pow(m_temp_i - temp_i[j], 2);
         std_temp_a += pow(m_temp_a - temp_a[j], 2);
@@ -140,7 +144,8 @@ void loop() {
       
       std_temp_hdc = sqrt(std_temp_hdc / MEASURECOUNT);
       std_hum_hdc = sqrt(std_temp_hdc / MEASURECOUNT);
-                              
+      
+      // ouptut the data
       Serial.print("Temp Inn=");
       Serial.print(m_temp_i);
       Serial.print(" Hudy Inn=");
@@ -183,7 +188,7 @@ void loop() {
       Serial.println("#########################");
       Serial.println();
       Serial.println();
-      delay(2000);
+      delay(60000);
       i = 0;
     }
 }
